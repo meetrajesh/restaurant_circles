@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>Circles</title>
+    <link href="./default.css" rel="stylesheet">
+    <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
+    <script>
+
+// Create an object containing LatLng, population.
+	 restaurants =
+[{"name":"UENO MARKET","sum":"79.42","count":"9","address":"75 Sherbourne St Toronto, ON M5A 2P9"},{"name":"FUSARO'S","sum":"48.48","count":"4","address":"294 Richmond St E Toronto, ON M5A 4S8"},{"name":"SUBWAY","sum":"41.48","count":"7","address":"24 Richmond St East Toronto, ON M5C 2R9, CAN"},{"name":"SPRING ROLLS GO","sum":"41.47","count":"4","address":"120 Church St Toronto, ON M5C 2G8"},{"name":"NO BULL BURGERS","sum":"38.80","count":"4","address":"179 Parliament St Toronto, ON M5A 1S8"},{"name":"FRIENDS CONVENIENCE","sum":"32.19","count":"4","address":"105 Victoria St. Toronto, ON"},{"name":"AMAYA EXPRESS","sum":"30.85","count":"3","address":"263 King Street East Toronto, ON M5A 1K2"},{"name":"EGGSMART","sum":"28.22","count":"2","address":"474 Adelaide Street East, Toronto, ON M5A 2W7, Canada"},{"name":"THE WORKS-WELLINGTON","sum":"12.15","count":"1","address":"60 Wellington Street East, Toronto"},{"name":"DRUXY'S-#058","sum":"11.3","count":"1","address":"29 Queen Street E Toronto, ON M5C 1R5"},{"name":"BIG SMOKE BURGER - KIN","sum":"19.75","count":"2","address":"50 King Street East Toronto, ON"},{"name":"THE BERKELY CAFE","sum":"19.20","count":"2","address":"141 Berkeley St Toronto, ON M5A 2W7"},{"name":"TERRONI ADELAIDE","sum":"17.00","count":"1","address":"57 Adelaide St E Toronto"}]
+	 ;
+
+var circle = [];
+
+function address_to_latlong(restaurant, cb) {
+	var geocoder = new google.maps.Geocoder;
+	var geocode_request = { address: '' };
+	geocode_request.address = restaurant.address;
+	geocoder.geocode(geocode_request, function(result) {
+			if (!result) {
+				cb(null, null);
+				return;
+			}
+			cb(restaurant, new google.maps.LatLng(result[0].geometry.location.lb, result[0].geometry.location.mb));
+	});
+}
+
+function initialize() {
+  var mapOptions = {
+    zoom: 16,
+	center: new google.maps.LatLng(43.6537888, -79.3669663), 
+    mapTypeId: google.maps.MapTypeId.ROADMAP
+  };
+
+  var map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+
+  // marker
+  var greenIcon = { url: 'http://www.google.com/intl/en_us/mapfiles/ms/micons/green-dot.png' };
+  var markerOpts = { title: '411 Richmond St. East', position: new google.maps.LatLng(43.6537888, -79.3669663), map: map, icon: greenIcon };
+  var marker = new google.maps.Marker(markerOpts);
+  var infoWindow = new google.maps.InfoWindow;
+  google.maps.event.addListener(marker, 'click', function() {
+      infoWindow.setContent('Checkout 51<br/><strong>411 Richmond St. East</strong>');
+      infoWindow.open(map, this);
+  });
+
+  var blueIcon = { url: 'http://www.google.com/intl/en_us/mapfiles/ms/micons/blue-dot.png' };
+  var markerOpts = { title: '105 Victoria St.', position: new google.maps.LatLng(43.65212,-79.377815), map: map, icon: blueIcon };
+  var marker = new google.maps.Marker(markerOpts);
+  var infoWindow = new google.maps.InfoWindow;
+  google.maps.event.addListener(marker, 'click', function() {
+      infoWindow.setContent('Checkout 51<br/><strong>105 Victoria St.</strong>');
+      infoWindow.open(map, this);
+  });
+
+
+  google.maps.event.addListener(map, 'click', function() {
+	  infoWindow.close();
+	  infoWindow2.close();
+  });
+
+  // get max avg
+  var maxavg = 0;
+  for (var i=0; i < restaurants.length; i++) {
+	  var rest = restaurants[i];
+	  var avg = Math.round(rest.sum / rest.count * 10) / 10;
+	  maxavg = Math.max(maxavg, avg);
+  }
+
+  for (var i=0; i < restaurants.length; i++) {
+
+	  var rest = restaurants[i];
+	  address_to_latlong(rest, function(restaurant, latlong) {
+
+			  if (latlong) {
+
+				  var avg = Math.round(restaurant.sum / restaurant.count * 10) / 10;
+				  var opacity = 1-(((100/maxavg) * avg / 100));
+				  //console.log(opacity);
+				  // Construct the circle for each value in restaurants
+				  var populationOptions = {
+					  strokeColor: '#FF0000',
+					  strokeOpacity: 0.8,
+					  strokeWeight: 2,
+					  fillColor: '#FF0000',
+					  fillOpacity: opacity,
+					  map: map,
+					  center: latlong,
+					  radius: restaurant.sum * 1.5		  
+				  };
+				  circle[i] = new google.maps.Circle(populationOptions);
+				  if (circle[i]) {
+				  google.maps.event.addListener(circle[i], 'click', function() {
+						  alert("Restaurant: " + restaurant.name + "\n" +
+								"Sum: $" + restaurant.sum + "\n" +
+								"Count: " + restaurant.count + "\n" +
+								"Average: " + avg);
+					  });
+				  }
+				  circle[i]= null;
+
+				  populationOptions = {
+					  strokeColor: '#4A76C6',
+					  strokeOpacity: 0.8,
+					  strokeWeight: 2,
+					  fillColor: '#4A76C6',
+					  fillOpacity: 0.55,
+					  map: map,
+					  center: latlong,
+					  radius: restaurant.count * 14
+				  };
+				  //circle[i] = new google.maps.Circle(populationOptions);
+				  if (circle[i]) {
+					  google.maps.event.addListener(circle[i], 'click', function() {
+							  alert("Restaurant: " + restaurant.name + "\n" +
+									"Sum: $" + restaurant.sum + "\n" +
+									"Count: " + restaurant.count);
+						  });
+				  }
+				  circle[i]= null;
+
+
+			  }
+		  });
+	  
+  }
+}
+
+google.maps.event.addDomListener(window, 'load', initialize);
+
+    </script>
+  </head>
+  <body>
+    <div id="map-canvas"></div>
+  </body>
+</html>
